@@ -1,0 +1,34 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python: ["3.10", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Lint
+        if: matrix.os == 'ubuntu-latest' && matrix.python == '3.13'
+        run: pipx run ruff==0.15.22 check src tests && pipx run ruff==0.15.22 format --check src tests
+      - name: Unit tests
+        run: PYTHONPATH=src python -m unittest discover -s tests -v
+      - name: CLI smoke test
+        run: PYTHONPATH=src python -m bubblewise preview "**hi** [[effect:heart]]"
+      - name: Package builds
+        run: python -m pip wheel --no-deps -w dist .
