@@ -99,6 +99,22 @@ class ImsgTest(unittest.TestCase):
         with self.assertRaises(Unsupported):
             Imsg(run=FakeRun()).send_later(CHAT, parse("hi [[effect:heart]]"), datetime.now(timezone.utc))
 
+    def test_chats_reads_one_json_object_per_line(self):
+        lines = [
+            {"guid": CHAT, "name": "", "contactName": "Sam", "participants": ["+15555550100"]},
+            {"identifier": "chat0001", "displayName": "Trip", "participants": ["a@example.com", "b@example.com"]},
+        ]
+        run = FakeRun(stdout="\n".join(json.dumps(line) for line in lines) + "\n")
+        chats = Imsg(run=run).chats(5)
+        self.assertEqual(run.calls[0], ["imsg", "chats", "--limit", "5", "--json"])
+        self.assertEqual(
+            chats,
+            [
+                {"guid": CHAT, "name": "Sam", "participants": ["+15555550100"]},
+                {"guid": "chat0001", "name": "Trip", "participants": ["a@example.com", "b@example.com"]},
+            ],
+        )
+
     def test_a_failure_says_what_imsg_said(self):
         with self.assertRaisesRegex(SendFailed, "helper not injected"):
             Imsg(run=FakeRun(returncode=1, stderr="helper not injected")).send(CHAT, parse("hi"))
@@ -129,6 +145,28 @@ class BlueBubblesTest(unittest.TestCase):
         self.assertEqual(bb.send(CHAT, parse("Meet at **6**")), ["G2"])
         self.assertNotIn("textFormatting", fake.requests[1][1])
         self.assertEqual(fake.requests[1][1]["message"], "Meet at 6")
+
+    def test_a_rejected_effect_is_reported_as_plain(self):
+        bb, fake = self.server(fail=lambda body: 400 if "effectId" in body else None)
+        self.assertEqual(bb.send(CHAT, parse("We did it [[effect:confetti]]")), ["G2"])
+        self.assertTrue(bb.sent_plain)
+        bb.send(CHAT, parse("just words"))
+        self.assertFalse(bb.sent_plain)
+
+    def test_chats_lists_guids_names_and_people(self):
+        def opener(request, timeout):
+            self.assertIn("/api/v1/chat/query?", request.full_url)
+            self.assertEqual(json.loads(request.data), {"limit": 3})
+            chat = {
+                "guid": CHAT,
+                "chatIdentifier": "+15555550100",
+                "displayName": "",
+                "participants": [{"address": "+15555550100"}],
+            }
+            return FakeResponse(json.dumps({"status": 200, "data": [chat]}).encode())
+
+        chats = BlueBubbles("http://localhost:1234", "pw", opener=opener).chats(3)
+        self.assertEqual(chats, [{"guid": CHAT, "name": "+15555550100", "participants": ["+15555550100"]}])
 
     def test_rejected_invisible_ink_is_never_resent_plain(self):
         bb, fake = self.server(fail=lambda body: 400)

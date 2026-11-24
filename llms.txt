@@ -1,0 +1,27 @@
+# bubblewise
+
+> Lets an AI agent text like a person on iMessage. A Python CLI (standard library only) sends what an agent writes as native iMessage, with real bold and italic, bubble and screen effects, polls, Send Later and unsend, over imsg or a BlueBubbles server. A SKILL.md tells the agent when each feature fits. MIT license, macOS host for the bridge, Python 3.10+.
+
+Install it with `pipx install git+https://github.com/abhaymettu/bubblewise`, give the agent `skills/bubblewise/SKILL.md`, and set `BUBBLEWISE_ALLOWED_CHATS` to the chats it may send to; the backend is imsg by default (`IMSG_BIN`) or BlueBubbles (`BLUEBUBBLES_URL` plus `BLUEBUBBLES_PASSWORD` or `BUBBLEWISE_BLUEBUBBLES_PASSWORD`).
+
+Pick the recipe for the agent you are wiring in before you change anything. Hermes and OpenClaw already deliver the agent's replies, and OpenClaw already sends effects, polls and unsend natively, so the steps differ by agent.
+
+## Recipes
+
+- [Hermes Agent](https://raw.githubusercontent.com/abhaymettu/bubblewise/main/docs/recipes/hermes.md): BlueBubbles, the skill, a separate password variable, `allow_silence`
+- [OpenClaw](https://raw.githubusercontent.com/abhaymettu/bubblewise/main/docs/recipes/openclaw.md): imsg through OpenClaw's own iMessage plugin; skill only, no CLI
+- [Claude Code, Codex, any agent with a shell](https://raw.githubusercontent.com/abhaymettu/bubblewise/main/docs/recipes/any-agent.md): CLI plus skill, imsg on the same Mac
+
+## Agent instructions
+
+- [SKILL.md](https://raw.githubusercontent.com/abhaymettu/bubblewise/main/skills/bubblewise/SKILL.md): how to shape a text, emphasis, effects, polls, Send Later, unsend, and what never to do
+
+## Setup and safety
+
+- [Self-hosting](https://raw.githubusercontent.com/abhaymettu/bubblewise/main/docs/self-hosting.md): a dedicated macOS user and Apple ID, imsg or BlueBubbles step by step
+- [Security](https://raw.githubusercontent.com/abhaymettu/bubblewise/main/docs/security.md): Full Disk Access, SIP and helpers, passwords, both allowlists, incident steps
+
+## Optional
+
+- [README](https://raw.githubusercontent.com/abhaymettu/bubblewise/main/README.md): features, the markup, what needs what
+- [AGENTS.md](https://raw.githubusercontent.com/abhaymettu/bubblewise/main/AGENTS.md): working on the bubblewise code itself

@@ -1,16 +1,30 @@
 ---
 name: bubblewise
-description: Text a person on iMessage the way people text each other, using the native features of Messages - real bold and italic, bubble and screen effects, polls, Send Later and unsend - through the bubblewise CLI. Use whenever you send an iMessage on someone's behalf or reply to someone over iMessage, and when deciding whether a message should be a poll, a scheduled text, an effect, or an unsend.
+description: Text a person on iMessage the way people text each other, using the native features of Messages - real bold and italic, bubble and screen effects, polls, Send Later and unsend - through the bubblewise CLI or your platform's own iMessage actions. Use whenever you send an iMessage on someone's behalf or reply to someone over iMessage, and when deciding whether a message should be a poll, a scheduled text, an effect, or an unsend.
 ---
 
 # Texting well on iMessage
 
-You are writing to a person's phone. Write the way a friend texts: short, answer first, no preamble, no
-recap. Every feature below exists to make a text clearer or warmer. None of them is decoration.
+You are writing to a person's phone. Write the way a friend texts: short, with the answer first. Every feature below is there to make a
+text clearer or warmer, so use one only when it does that.
 
-Only `bubblewise` commands send anything; your own reply text is not delivered to the chat. Your setup says
-whether you text as an assistant or on someone's behalf. When you write as a person, write as them and
-never mention being an agent.
+Your setup says whether you text as an assistant or on someone's behalf. When you write as a person, write
+as them and never mention being an agent.
+
+## How your words reach the chat
+
+Find out which of these you are before the first send:
+
+- **A terminal or coding agent.** Only `bubblewise` commands send anything. Your reply text stays with your
+  owner.
+- **A messaging gateway that delivers your reply (Hermes, OpenClaw).** Your reply is already a text in that
+  chat, so most answers need no `bubblewise` at all. Use it for what the gateway cannot send itself, such
+  as an effect, a scheduled text or an unsend. When you do send with `bubblewise` into the chat you are
+  answering, make your whole reply the gateway's silence token (`[SILENT]` on Hermes, `NO_REPLY` on
+  OpenClaw) so the person does not get the message twice.
+- **A platform with its own iMessage actions** (OpenClaw's message tool, an imsg plugin). Send effects,
+  polls and unsends with those actions and use this guide for when each one fits. Do not send the same
+  message through both.
 
 ## Send
 
@@ -25,9 +39,11 @@ See you there
 EOF
 ```
 
-`--json` prints `{"sent": 2, "guids": [...], "effect": null}`. Keep the GUIDs for two minutes in case you
-need to unsend. `bubblewise preview` shows the bubbles, styles and effect without sending. Get chat GUIDs
-from `imsg chats --json` or the BlueBubbles chat list; never guess one.
+`--json` prints `{"sent": 2, "guids": [...], "effect": null, "plain": false}`. Keep the GUIDs for two
+minutes in case you need to unsend. `"plain": true` means the server refused the styles or the effect and
+the words went out plain; tell the person only if the effect mattered. `bubblewise preview` shows the
+bubbles, styles and effect without sending. `bubblewise chats` lists chat GUIDs (only the allowed ones once
+`BUBBLEWISE_ALLOWED_CHATS` is set); never guess one.
 
 ## How a message is shaped
 
@@ -96,7 +112,7 @@ Use it when someone asks to be reminded or messaged at a time, or when a message
 ("good luck today" on the morning of an exam). Then confirm in one line with the time in bold:
 `Will do, I'll text you at **6pm**`. Do not schedule what they need now.
 
-`--at` takes `+30m`, `+2h`, `18:45` or an ISO time, in the time zone of the Mac that sends. A clock time
+`--at` takes `+30m`, `+2h`, `18:45` or an ISO time, in the time zone of the machine that runs `bubblewise`. A clock time
 that has already passed today means tomorrow; an ISO time in the past is refused. Send Later carries text
 and styles, not effects. If scheduling fails, tell the person you could not set it; never promise to
 remember.

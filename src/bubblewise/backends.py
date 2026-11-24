@@ -31,9 +31,10 @@ class SendFailed(Exception):
 
 
 class Imsg:
-    """github.com/steipete/imsg. Styles, effects, polls and unsend use its injected helper."""
+    """github.com/openclaw/imsg. Styles, effects, polls and unsend use its injected helper."""
 
     name = "imsg"
+    sent_plain = False
 
     def __init__(self, binary: str = "imsg", run: Callable[..., subprocess.CompletedProcess] = subprocess.run):
         self.binary, self._run = binary, run
@@ -65,6 +66,22 @@ class Imsg:
             guids.append(self._guid(self._call(*args)))
         return guids
 
+    def chats(self, limit: int) -> list[dict]:
+        proc = self._run(
+            [self.binary, "chats", "--limit", str(limit), "--json"], capture_output=True, text=True, timeout=60
+        )
+        if proc.returncode != 0:
+            raise SendFailed(f"imsg chats: {(proc.stderr or proc.stdout).strip()[:300]}")
+        rows = [json.loads(line) for line in (proc.stdout or "").splitlines() if line.strip().startswith("{")]
+        return [
+            {
+                "guid": row.get("guid") or row.get("identifier", ""),
+                "name": row.get("contactName") or row.get("displayName") or row.get("name", ""),
+                "participants": row.get("participants") or [],
+            }
+            for row in rows
+        ]
+
     def poll(self, chat: str, question: str, options: list[str]) -> str:
         args = ["poll", "send", "--chat", chat, "--question", question]
         for option in options:
@@ -93,6 +110,7 @@ class BlueBubbles:
     """A BlueBubbles server (bluebubbles.app). Styles, effects and unsend need its Private API helper."""
 
     name = "bluebubbles"
+    sent_plain = False
 
     def __init__(self, url: str, password: str, opener: Opener | None = None):
         self.url, self.password = url.rstrip("/"), password
@@ -123,6 +141,7 @@ class BlueBubbles:
 
     def send(self, chat: str, message: Message, *, reply_to: str | None = None) -> list[str]:
         guids = []
+        self.sent_plain = False
         for index, bubble in enumerate(message.bubbles):
             body: dict = {"chatGuid": chat, "tempGuid": f"temp-{uuid.uuid4()}", "message": bubble.text}
             rich: dict = {}
@@ -143,7 +162,19 @@ class BlueBubbles:
                     raise
                 plain = {"chatGuid": chat, "tempGuid": f"temp-{uuid.uuid4()}", "message": bubble.text}
                 guids.append(self._guid(self._post("message/text", plain)))
+                self.sent_plain = True
         return guids
+
+    def chats(self, limit: int) -> list[dict]:
+        data = self._post("chat/query", {"limit": limit}).get("data") or []
+        return [
+            {
+                "guid": chat.get("guid", ""),
+                "name": chat.get("displayName") or chat.get("chatIdentifier", ""),
+                "participants": [p.get("address", "") for p in chat.get("participants") or []],
+            }
+            for chat in data
+        ]
 
     def poll(self, chat: str, question: str, options: list[str]) -> str:
         raise Unsupported("BlueBubbles has no route for creating polls yet")

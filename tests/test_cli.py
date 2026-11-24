@@ -49,7 +49,7 @@ class CommandsTest(unittest.TestCase):
         backend.send.return_value = ["G1"]
         code, out, _ = run(["send", "--chat", "C", "--json", "hello"], backend)
         self.assertEqual(code, 0)
-        self.assertEqual(json.loads(out), {"sent": 1, "guids": ["G1"], "effect": None})
+        self.assertEqual(json.loads(out), {"sent": 1, "guids": ["G1"], "effect": None, "plain": False})
 
     def test_poll_falls_back_to_a_numbered_list(self):
         backend = mock.Mock()
@@ -86,11 +86,57 @@ class CommandsTest(unittest.TestCase):
         backend.unsend.assert_not_called()
         backend.poll.assert_not_called()
 
+    def test_send_reports_no_effect_when_the_server_took_it_plain(self):
+        backend = mock.Mock(sent_plain=True)
+        backend.send.return_value = ["G1"]
+        code, out, _ = run(["send", "--json", "--chat", "C", "We did it [[effect:confetti]]"], backend)
+        self.assertEqual(json.loads(out), {"sent": 1, "guids": ["G1"], "effect": None, "plain": True})
+
+    def test_chats_shows_only_allowed_chats_once_the_list_is_set(self):
+        backend = mock.Mock()
+        backend.chats.return_value = [
+            {"guid": "A", "name": "Sam", "participants": []},
+            {"guid": "B", "name": "Trip", "participants": []},
+        ]
+        with mock.patch.dict("os.environ", {"BUBBLEWISE_ALLOWED_CHATS": "B"}):
+            code, out, _ = run(["chats", "--json"], backend)
+        self.assertEqual([c["guid"] for c in json.loads(out)], ["B"])
+
     def test_backend_errors_exit_one_with_the_reason(self):
         backend = mock.Mock()
         backend.unsend.side_effect = Unsupported("too late")
         code, _, err = run(["unsend", "--chat", "C", "G1"], backend)
         self.assertEqual((code, err.strip()), (1, "bubblewise: too late"))
+
+
+class BackendChoiceTest(unittest.TestCase):
+    def choose(self, env):
+        with mock.patch.dict("os.environ", env, clear=True):
+            return cli._backend(cli.build_parser().parse_args(["send", "--chat", "C", "hi"]))
+
+    def test_own_password_name_wins_for_gateways_that_hide_the_shared_one(self):
+        backend = self.choose(
+            {
+                "BLUEBUBBLES_URL": "http://bb.example.com:1234/",
+                "BLUEBUBBLES_PASSWORD": "shared",
+                "BUBBLEWISE_BLUEBUBBLES_PASSWORD": "own",
+            }
+        )
+        self.assertEqual(
+            (backend.name, backend.url, backend.password), ("bluebubbles", "http://bb.example.com:1234", "own")
+        )
+
+    def test_shared_password_name_still_works(self):
+        backend = self.choose({"BLUEBUBBLES_URL": "http://bb.example.com", "BLUEBUBBLES_PASSWORD": "shared"})
+        self.assertEqual(backend.password, "shared")
+
+    def test_missing_password_names_both_variables(self):
+        with self.assertRaises(SystemExit) as caught:
+            self.choose({"BUBBLEWISE_BACKEND": "bluebubbles", "BLUEBUBBLES_URL": "http://bb.example.com"})
+        self.assertIn("BUBBLEWISE_BLUEBUBBLES_PASSWORD", str(caught.exception))
+
+    def test_imsg_is_the_default(self):
+        self.assertEqual(self.choose({}).name, "imsg")
 
 
 if __name__ == "__main__":

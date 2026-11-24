@@ -1,10 +1,28 @@
 # AGENTS.md
 
+## Start here if you are wiring bubblewise into an agent
+
+Open the recipe for the agent you are setting up and follow it as written; the steps differ by agent.
+
+| Agent | Recipe | In one line |
+|---|---|---|
+| Hermes Agent | [docs/recipes/hermes.md](docs/recipes/hermes.md) | BlueBubbles, CLI plus skill, `BUBBLEWISE_BLUEBUBBLES_PASSWORD`, `allow_silence: true` |
+| OpenClaw | [docs/recipes/openclaw.md](docs/recipes/openclaw.md) | Skill only; OpenClaw's iMessage plugin already sends styles, effects, polls and unsend |
+| Claude Code, Codex, anything with a shell | [docs/recipes/any-agent.md](docs/recipes/any-agent.md) | CLI plus skill, imsg on the same Mac |
+
+- Skill: `skills/bubblewise/SKILL.md`. CLI: `pipx install git+https://github.com/abhaymettu/bubblewise`.
+- Check before you send: `bubblewise preview "<text>"` sends nothing.
+- Never send a test text to anyone but the owner, and set `BUBBLEWISE_ALLOWED_CHATS`.
+- Read [docs/security.md](docs/security.md) before giving an agent the bridge.
+
+The rest of this file is for working on the bubblewise code.
+
 ## What this is
 
 `bubblewise` turns text an agent writes (markdown plus `[[effect:NAME]]`) into native iMessage sends
-through imsg or a BlueBubbles server. `skill/SKILL.md` is the agent-facing guide; keep it in step with
-the CLI.
+through imsg or a BlueBubbles server. `skills/bubblewise/SKILL.md` is the agent-facing guide; keep it in
+step with the CLI. `docs/recipes/` says how each agent wires it in; keep each recipe's "What works today"
+table in step with README.md.
 
 ## Layout
 
@@ -12,9 +30,13 @@ the CLI.
 - `src/bubblewise/backends.py`: `Imsg` (subprocess) and `BlueBubbles` (urllib). Raise `Unsupported` when a
   backend cannot do something at all, `SendFailed` when it tried; `retry_safe` is true only when the
   request was refused before anything was sent.
-- `src/bubblewise/cli.py`: `preview`, `send`, `poll`, `unsend`, `later`.
-- `skill/SKILL.md`: when to use each feature. Written for the agent, not for developers.
+- `src/bubblewise/cli.py`: `preview`, `send`, `poll`, `unsend`, `later`, `chats`. `chats` lists only allowed
+  chats once `BUBBLEWISE_ALLOWED_CHATS` is set.
+- `skills/bubblewise/SKILL.md`: when to use each feature. Written for the agent, not for developers.
 
+- `docs/recipes/`: one page per agent (Hermes, OpenClaw, any agent with a shell). Every config key in them
+  comes from that agent's own docs or source, named at the end of the page.
+- `llms.txt`: the index an agent reads first. Update it when a page is added or moved.
 - `docs/self-hosting.md`, `docs/security.md`: setting up imsg or BlueBubbles for an agent, and running it
   safely. General guidance only; never add anything from one person's setup.
 
@@ -38,4 +60,4 @@ Python 3.10+, standard library only. Do not add dependencies.
 - `BUBBLEWISE_ALLOWED_CHATS` is checked in `cli.main` before any backend call. Keep it that way for every
   new command that takes `--chat`.
 - When a feature's support changes upstream (imsg or BlueBubbles), update the table in README.md and the
-  wording in `skill/SKILL.md` in the same change.
+  wording in `skills/bubblewise/SKILL.md` in the same change.

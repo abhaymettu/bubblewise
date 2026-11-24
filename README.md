@@ -3,13 +3,13 @@
 <p align="center">
   <b>Let your AI agent text like a person on iMessage.</b><br>
   Real bold and italic instead of asterisks, effects for the moments that earn one, polls when people need to choose,<br>
-  texts that arrive at the right time, and unsend for real mistakes. Over <a href="https://github.com/steipete/imsg">imsg</a> or a <a href="https://bluebubbles.app">BlueBubbles</a> server.
+  texts that arrive at the right time, and unsend for real mistakes. Over <a href="https://github.com/openclaw/imsg">imsg</a> or a <a href="https://bluebubbles.app">BlueBubbles</a> server.
 </p>
 
 <p align="center">
   <img alt="python" src="https://img.shields.io/badge/python-3.10%2B-3776ab">
   <img alt="dependencies" src="https://img.shields.io/badge/dependencies-none-30d158">
-  <img alt="tests" src="https://img.shields.io/badge/tests-40-0a84ff">
+  <img alt="tests" src="https://img.shields.io/badge/tests-49-0a84ff">
   <img alt="license" src="https://img.shields.io/badge/license-MIT-8e8e93">
 </p>
 
@@ -22,7 +22,7 @@ Agents write markdown. iMessage does not render it. So an agent texting you eith
 numbered list when it wants you to choose, says "I'll remind you" with no way to do it, and has no idea
 that Messages can do any of the things people use every day.
 
-Messages can do all of it natively. The tools to reach it exist ([imsg](https://github.com/steipete/imsg),
+Messages can do all of it natively. The tools to reach it exist ([imsg](https://github.com/openclaw/imsg),
 BlueBubbles' Private API). What is missing is the layer in between: something that turns what an agent
 naturally writes into native iMessage, and instructions that tell the agent when each feature fits.
 
@@ -59,7 +59,7 @@ bubblewise preview "Dinner moved to **7:30**, table for ~~4~~ 6. [[effect:confet
 | a blank line | a new bubble |
 | `## headers`, tables, code fences | clean text, markup removed |
 | `[label](https://url)` | the label, then a tappable link card |
-| `[bloom]words[/bloom]` with `--text-effects` | animated words (imsg only) |
+| `[bloom]words[/bloom]` with `--text-effects` | animated words (imsg, once text effects ship there) |
 
 And three commands for the rest:
 
@@ -67,20 +67,34 @@ And three commands for the rest:
 bubblewise poll   --chat '<guid>' "Dinner Friday?" "Thai" "Pizza" "Somewhere new"
 bubblewise later  --chat '<guid>' --at 07:30 "Leave by **8** for the airport"
 bubblewise unsend --chat '<guid>' <message-guid>
+bubblewise chats    # the chat GUIDs to use above
 ```
 
-Where a feature is not available the message still goes: a poll becomes a numbered list, styles become
+Where a backend has no route for a feature the message still goes: a poll on BlueBubbles becomes a numbered list, styles become
 plain words, an effect is dropped. A server that rejects styled text gets the same text again, plain. Two
 exceptions: invisible ink is never downgraded to plain text, since that would show the hidden words, and a
 send that may have gone through is never sent twice.
 
 ## The skill
 
-[`skill/SKILL.md`](skill/SKILL.md) is the part that makes an agent use this well. It tells the agent how
-to shape a text (answer first, one idea per bubble), when to bold something (the one thing you must not
-miss) and when not to, which effect fits which moment and when none does, when a decision should be a
-poll, when a message should wait for the right time, and why unsend is for mistakes rather than rewording.
-Load it as a skill in Claude Code or any agent that reads `SKILL.md`, or paste it into a system prompt.
+[`skills/bubblewise/SKILL.md`](skills/bubblewise/SKILL.md) is the part that makes an agent use this well.
+It tells the agent how to shape a text (answer first, one idea per bubble), when to bold something (the one
+thing you must not miss) and when not to, which effect fits which moment and when none does, when a
+decision should be a poll, when a message should wait for the right time, and why unsend is for mistakes
+rather than rewording.
+
+## Wire it into your agent
+
+Each agent reaches iMessage differently, so each has its own page:
+
+- [Hermes Agent](docs/recipes/hermes.md): next to Hermes's BlueBubbles platform, for effects, Send Later and
+  unsend.
+- [OpenClaw](docs/recipes/openclaw.md): OpenClaw already sends styles, effects, polls and unsend through
+  imsg; it takes the skill only.
+- [Claude Code, Codex, or any agent with a shell](docs/recipes/any-agent.md): the CLI and the skill, over
+  imsg on the same Mac.
+
+Agents reading this repository can start at [llms.txt](llms.txt).
 
 ## Self-hosting, and doing it safely
 
@@ -110,7 +124,7 @@ export BUBBLEWISE_BACKEND=imsg
 
 # BlueBubbles
 export BLUEBUBBLES_URL=http://localhost:1234
-export BLUEBUBBLES_PASSWORD=...
+export BLUEBUBBLES_PASSWORD=...   # or BUBBLEWISE_BLUEBUBBLES_PASSWORD, for gateways that hide the shared name
 ```
 
 ## What needs what

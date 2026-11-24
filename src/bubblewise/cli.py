@@ -21,9 +21,12 @@ def _backend(args):
         or ("bluebubbles" if os.environ.get("BLUEBUBBLES_URL") else "imsg")
     )
     if kind == "bluebubbles":
-        url, password = os.environ.get("BLUEBUBBLES_URL"), os.environ.get("BLUEBUBBLES_PASSWORD")
+        url = os.environ.get("BLUEBUBBLES_URL")
+        password = os.environ.get("BUBBLEWISE_BLUEBUBBLES_PASSWORD") or os.environ.get("BLUEBUBBLES_PASSWORD")
         if not url or not password:
-            raise SystemExit("bubblewise: set BLUEBUBBLES_URL and BLUEBUBBLES_PASSWORD")
+            raise SystemExit(
+                "bubblewise: set BLUEBUBBLES_URL and BLUEBUBBLES_PASSWORD (or BUBBLEWISE_BLUEBUBBLES_PASSWORD)"
+            )
         return BlueBubbles(url, password)
     return Imsg(os.environ.get("IMSG_BIN", "imsg"))
 
@@ -76,8 +79,21 @@ def cmd_preview(args) -> int:
 
 def cmd_send(args) -> int:
     message = parse(_text(args), text_effects=args.text_effects)
-    guids = _backend(args).send(args.chat, message, reply_to=args.reply_to)
-    _emit(args, {"sent": len(guids), "guids": guids, "effect": message.effect_name})
+    backend = _backend(args)
+    guids = backend.send(args.chat, message, reply_to=args.reply_to)
+    plain = backend.sent_plain is True
+    _emit(args, {"sent": len(guids), "guids": guids, "effect": None if plain else message.effect_name, "plain": plain})
+    return 0
+
+
+def cmd_chats(args) -> int:
+    allowed = {c.strip() for c in os.environ.get("BUBBLEWISE_ALLOWED_CHATS", "").split(",") if c.strip()}
+    chats = [c for c in _backend(args).chats(args.limit) if not allowed or c["guid"] in allowed]
+    if args.json:
+        print(json.dumps(chats, ensure_ascii=False))
+    else:
+        for chat in chats:
+            print("\t".join([chat["guid"], chat["name"], ", ".join(chat["participants"])]))
     return 0
 
 
@@ -143,6 +159,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("guid")
     p = add("later", cmd_later, "schedule a text: +30m, +2h, 18:45 or an ISO time")
     p.add_argument("--at", required=True)
+    p = add(
+        "chats",
+        cmd_chats,
+        "list recent chats and their GUIDs (only allowed ones when the list is set)",
+        chat=False,
+        text=False,
+    )
+    p.add_argument("--limit", type=int, default=25)
     return parser
 
 

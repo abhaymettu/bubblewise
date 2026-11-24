@@ -16,13 +16,13 @@ app. Your agent talks to the bridge. This guide sets that up so it is useful and
 
 ## Pick a bridge
 
-| | [imsg](https://github.com/steipete/imsg) | [BlueBubbles](https://bluebubbles.app) |
+| | [imsg](https://github.com/openclaw/imsg) | [BlueBubbles](https://bluebubbles.app) |
 |---|---|---|
 | What it is | A command-line tool and a JSON-RPC stream on the same Mac | A server app with a REST API and webhooks |
 | Agent runs | On the same Mac | Anywhere that can reach the server |
 | Reads messages | `imsg watch --json`, straight from the database | Webhooks pushed to your agent |
 | Native features | Through its injected helper | Through its Private API helper |
-| Good for | An agent on the Mac itself, fewest moving parts | An agent on another machine, or a gateway that already speaks BlueBubbles (Hermes Agent, OpenClaw) |
+| Good for | An agent on the Mac itself, fewest moving parts; OpenClaw's iMessage plugin uses it | An agent on another machine, or a gateway that already speaks BlueBubbles (Hermes Agent) |
 
 Both helpers, the parts that send styles, effects, polls, replies and unsends, run inside Messages.app.
 That requires turning System Integrity Protection partly off. Plain text sending and reading work without
@@ -39,12 +39,12 @@ it. See [security.md](security.md#sip-and-the-helpers) before you decide.
 
 ## Option A: imsg
 
-1. Install imsg in the agent's user (see its [install guide](https://github.com/steipete/imsg/blob/main/docs/install.md)).
+1. Install imsg in the agent's user (see its [install guide](https://github.com/openclaw/imsg/blob/main/docs/install.md)).
 2. Give Full Disk Access to the one program that runs imsg (the terminal, or the launch agent's binary),
    not to everything. System Settings, Privacy and Security, Full Disk Access.
 3. Check: `imsg chats --json` lists the agent's chats. `imsg status --json` shows which advanced features
    the helper can use on this macOS version.
-4. Optional, for native features: follow imsg's [Advanced IMCore](https://github.com/steipete/imsg/blob/main/docs/advanced-imcore.md) guide to load its helper.
+4. Optional, for native features: follow imsg's [Advanced IMCore](https://github.com/openclaw/imsg/blob/main/docs/advanced-imcore.md) guide to load its helper.
 5. Run your agent in the same user. It reads with `imsg watch --json` and sends with `bubblewise`
    (`BUBBLEWISE_BACKEND=imsg`).
 
@@ -60,12 +60,12 @@ it. See [security.md](security.md#sip-and-the-helpers) before you decide.
 5. Point the agent at it: `BLUEBUBBLES_URL` and `BLUEBUBBLES_PASSWORD` in its environment, never in a
    file you commit. For incoming messages, register your agent's webhook in the server and check the
    password on every webhook request.
-6. Check: `bubblewise preview "hi"` works anywhere; `bubblewise send --chat '<guid>' "TEST"` reaches your
-   own phone.
+6. Check: `bubblewise chats` lists the agent's chats and their GUIDs; `bubblewise send --chat '<guid>'
+   "TEST"` to your own chat reaches your phone.
 
 ## Then
 
 - Set `BUBBLEWISE_ALLOWED_CHATS` to the chats your agent may send to (see [security.md](security.md#who-the-agent-may-text)).
-- Give your agent [`skill/SKILL.md`](../skill/SKILL.md).
+- Give your agent [`skills/bubblewise/SKILL.md`](../skills/bubblewise/SKILL.md).
 - After every macOS or Messages update, send yourself a test text. Helpers are the first thing an update
   breaks, and plain sending keeps working when they do.

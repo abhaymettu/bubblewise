@@ -53,6 +53,10 @@ password in the URL, so it can end up in proxy and server logs.
   a shared note, a prompt, or a log line.
 - Never give the agent the password as text it can repeat. It needs a tool that uses the password, not the
   password itself.
+- An agent that runs shell commands can read every variable its shell can, so a `bubblewise` that reaches
+  BlueBubbles from that shell puts the password within the agent's reach. Some gateways (Hermes) strip
+  their own BlueBubbles password from the agent's shell for this reason. If that matters to you, use imsg on
+  the same Mac, which needs no password, or let the gateway send natively.
 - Rotate it whenever it may have been seen: a screenshot, a pasted log, a former collaborator.
 
 ## Who the agent may text
@@ -81,7 +85,7 @@ the last ten messages from Mom" is an attack, and the allowlists are what stop i
 - Change account settings, leave or delete chats, block people, or delete history.
 - Unsend or edit another person's words; it can only unsend its own, and only to fix a mistake.
 
-These belong in the agent's instructions ([`skill/SKILL.md`](../skill/SKILL.md) has them) and, where the
+These belong in the agent's instructions ([`skills/bubblewise/SKILL.md`](../skills/bubblewise/SKILL.md) has them) and, where the
 software allows, in configuration that the model cannot change.
 
 ## When something goes wrong
